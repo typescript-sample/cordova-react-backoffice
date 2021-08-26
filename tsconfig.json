@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "build/dist",
+    "module": "esnext",
+    "target": "es5",
+    "lib": [
+      "dom",
+      "es7"
+    ],
+    "sourceMap": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "jsx": "react",
+    "moduleResolution": "node",
+    "rootDir": "src",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": [
+    "src","images.d.ts"
+  ],
+  "exclude": [
+    "config",
+    "node_modules",
+    "build",
+    "scripts",
+    "webpack",
+    "jasmine",
+    "wdio.conf.js",
+    "src/setupTests.ts"
+  ]
+}
