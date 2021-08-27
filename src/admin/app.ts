@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { HttpRequest } from 'axios-core';
+import { DatabaseManager } from 'sqlite-mobile';
+import { SqlUserService } from 'src/sqlite-mobile/user';
 import { options } from 'uione';
 import { ApprRoleAssignmentClient } from './service/client/ApprRoleAssignmentClient';
 import { ApprUserClient } from './service/client/ApprUserClient';
@@ -9,8 +11,20 @@ import { RoleAssignmentClient } from './service/client/RoleAssignmentClient';
 import { RoleClient } from './service/client/RoleClient';
 import { UserClient } from './service/client/UserClient';
 import { MasterDataService } from './service/MasterDataService';
+import { UserService } from './service/UserService';
+
+export function param(i: number): string {
+  return '$' + i;
+}
 
 const httpRequest = new HttpRequest(axios, options);
+// @ts-ignore: Unreachable code error
+const database = window.sqlitePlugin.openDatabase('database.db', '1.0', 'back office database', 1000000);
+const sqlite = new DatabaseManager(database);
+
+class resource {
+  static offline = true;
+}
 class ApplicationContext {
   public masterDataService: MasterDataService;
   public roleAssignmentService: RoleAssignmentClient;
@@ -43,9 +57,13 @@ class ApplicationContext {
     }
     return this.roleService;
   }
-  getUserService(): UserClient {
+  getUserService(): UserService {
     if (!this.userService) {
-      this.userService = new UserClient(httpRequest);
+      if (resource.offline) {
+
+      } else {
+        this.userService = new UserClient(httpRequest);
+      }
     }
     return this.userService;
   }
