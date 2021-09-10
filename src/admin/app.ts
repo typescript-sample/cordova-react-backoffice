@@ -1,38 +1,52 @@
 import axios from 'axios';
 import { HttpRequest } from 'axios-core';
+import { RoleSM, UserSM } from 'onecore';
+import { SearchBuilder } from 'query-core';
 import { DatabaseManager } from 'sqlite-mobile';
+import { SqlRoleService } from 'src/sqlite-mobile/role';
 import { SqlUserService } from 'src/sqlite-mobile/user';
-import { options } from 'uione';
+import { options, storage } from 'uione';
+import { roleModel } from './metadata/RoleModel';
+import { userModel } from './metadata/UserModel';
+import { Role } from './model/Role';
+import { User } from './model/User';
 import { ApprRoleAssignmentClient } from './service/client/ApprRoleAssignmentClient';
-import { ApprUserClient } from './service/client/ApprUserClient';
 import { AuditClient } from './service/client/AuditClient';
 import { MasterDataClient } from './service/client/MasterDataClient';
 import { RoleAssignmentClient } from './service/client/RoleAssignmentClient';
 import { RoleClient } from './service/client/RoleClient';
 import { UserClient } from './service/client/UserClient';
 import { MasterDataService } from './service/MasterDataService';
+import { RoleService } from './service/RoleService';
 import { UserService } from './service/UserService';
-
-export function param(i: number): string {
-  return '$' + i;
-}
 
 const httpRequest = new HttpRequest(axios, options);
 // @ts-ignore: Unreachable code error
 const database = window.sqlitePlugin.openDatabase('database.db', '1.0', 'back office database', 1000000);
 const sqlite = new DatabaseManager(database);
-
-class resource {
-  static offline = true;
+export interface Config {
+  user_url: string;
+  role_url: string;
+  audit_log_url: string;
 }
+
+export function param(i: number): string {
+  return '$' + i;
+}
+
+export const resource = {
+  offline: true
+};
 class ApplicationContext {
-  public masterDataService: MasterDataService;
-  public roleAssignmentService: RoleAssignmentClient;
-  public apprRoleAssignmentService: ApprRoleAssignmentClient;
-  public roleService: RoleClient;
-  public userService: UserClient;
-  public auditService: AuditClient;
-  public apprUserService: ApprUserClient;
+  private masterDataService: MasterDataService;
+  private roleAssignmentService: RoleAssignmentClient;
+  private apprRoleAssignmentService: ApprRoleAssignmentClient;
+  private roleService: RoleService;
+  private userService: UserService;
+  private auditService: AuditClient;
+  getConfig(): Config {
+    return storage.config();
+  }
   getMasterDataService(): MasterDataService {
     if (!this.masterDataService) {
       this.masterDataService = new MasterDataClient();
@@ -51,41 +65,37 @@ class ApplicationContext {
     }
     return this.apprRoleAssignmentService;
   }
-  getRoleService(): RoleClient {
+  getRoleService(): RoleService {
     if (!this.roleService) {
-      this.roleService = new RoleClient(httpRequest);
+      const c = this.getConfig();
+      if (resource.offline) {
+        const roleSearch = new SearchBuilder<Role, RoleSM>(sqlite.query, 'roles', roleModel.attributes);
+        this.roleService = new SqlRoleService(roleSearch.search, param, sqlite.query, sqlite.exec, sqlite.execBatch);
+      } else {
+        this.roleService = new RoleClient(httpRequest, c.role_url);
+      }
     }
     return this.roleService;
   }
   getUserService(): UserService {
     if (!this.userService) {
+      const c = this.getConfig();
       if (resource.offline) {
-
+        const userSearch = new SearchBuilder<User, UserSM>(sqlite.query, 'users', userModel.attributes);
+        this.userService = new SqlUserService(userSearch.search, param, sqlite.query, sqlite.exec, sqlite.execBatch);
       } else {
-        this.userService = new UserClient(httpRequest);
+        this.userService = new UserClient(httpRequest, c.user_url);
       }
     }
     return this.userService;
   }
   getAuditService(): AuditClient {
     if (!this.auditService) {
-      this.auditService = new AuditClient(httpRequest);
+      const c = this.getConfig();
+      this.auditService = new AuditClient(httpRequest, c.audit_log_url);
     }
     return this.auditService;
   }
-  getApprUserService(): ApprUserClient {
-    if (!this.apprUserService) {
-      this.apprUserService = new ApprUserClient(httpRequest);
-    }
-    return this.apprUserService;
-  }
-  // readonly masterDataService: MasterDataService = new MasterDataClient();
-  // readonly roleAssignmentService = new RoleAssignmentClient(httpRequest);
-  // readonly apprRoleAssignmentService = new ApprRoleAssignmentClient(httpRequest);
-  // readonly roleService = new RoleClient(httpRequest);
-  // readonly userService = new UserClient(httpRequest);
-  // readonly auditService = new AuditClient(httpRequest);
-  // readonly apprUserService = new ApprUserClient(httpRequest);
 }
 
 export const context = new ApplicationContext();
