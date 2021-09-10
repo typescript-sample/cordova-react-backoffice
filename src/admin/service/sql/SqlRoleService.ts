@@ -3,6 +3,7 @@ import { RoleSM } from 'onecore';
 import { Attribute, buildMap, buildToDelete, buildToInsert, buildToInsertBatch, buildToUpdate, keys, Model, SearchResult, select, Statement, StringMap } from 'query-core';
 import { roleModel } from '../../metadata/RoleModel';
 import { Role } from '../../model/Role';
+import { RoleService } from '../RoleService';
 
 export interface UserRole {
   userId?: string;
@@ -40,7 +41,7 @@ export interface Module {
   roleId?: string;
   permissions?: number;
 }
-export class SqlRoleService {
+export class SqlRoleService implements RoleService {
   private primaryKeys: Attribute[];
   private map: StringMap;
   private roleModuleMap: StringMap;

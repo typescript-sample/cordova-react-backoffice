@@ -3,8 +3,6 @@ import { HttpRequest } from 'axios-core';
 import { RoleSM, UserSM } from 'onecore';
 import { SearchBuilder } from 'query-core';
 import { DatabaseManager } from 'sqlite-mobile';
-import { SqlRoleService } from 'src/sqlite-mobile/role';
-import { SqlUserService } from 'src/sqlite-mobile/user';
 import { options, storage } from 'uione';
 import { roleModel } from './metadata/RoleModel';
 import { userModel } from './metadata/UserModel';
@@ -18,6 +16,8 @@ import { RoleClient } from './service/client/RoleClient';
 import { UserClient } from './service/client/UserClient';
 import { MasterDataService } from './service/MasterDataService';
 import { RoleService } from './service/RoleService';
+import { SqlRoleService } from './service/sql/SqlRoleService';
+import { SqlUserService } from './service/sql/SqlUserService';
 import { UserService } from './service/UserService';
 
 const httpRequest = new HttpRequest(axios, options);
