@@ -3,6 +3,7 @@ import { HttpRequest } from 'axios-core';
 import { RoleSM, UserSM } from 'onecore';
 import { SearchBuilder } from 'query-core';
 import { DatabaseManager } from 'sqlite-mobile';
+import { copyDatabaseFile } from 'src/prepareDB/prepareDB';
 import { options, storage } from 'uione';
 import { roleModel } from './metadata/RoleModel';
 import { userModel } from './metadata/UserModel';
@@ -21,9 +22,7 @@ import { SqlUserService } from './service/sql/SqlUserService';
 import { UserService } from './service/UserService';
 
 const httpRequest = new HttpRequest(axios, options);
-// @ts-ignore: Unreachable code error
-const database = window.sqlitePlugin.openDatabase('database.db', '1.0', 'back office database', 1000000);
-const sqlite = new DatabaseManager(database);
+
 export interface Config {
   user_url: string;
   role_url: string;
@@ -44,6 +43,16 @@ class ApplicationContext {
   private roleService: RoleService;
   private userService: UserService;
   private auditService: AuditClient;
+  private sqlite: DatabaseManager;
+  constructor() {
+    if (resource.offline) {
+      copyDatabaseFile('office.db').then(() => {
+        // @ts-ignore: Unreachable code error
+        const db = window.sqlitePlugin.openDatabase('office.db');
+        this.sqlite = new DatabaseManager(db);
+      });
+    }
+  }
   getConfig(): Config {
     return storage.config();
   }
@@ -69,8 +78,10 @@ class ApplicationContext {
     if (!this.roleService) {
       const c = this.getConfig();
       if (resource.offline) {
-        const roleSearch = new SearchBuilder<Role, RoleSM>(sqlite.query, 'roles', roleModel.attributes);
-        this.roleService = new SqlRoleService(roleSearch.search, param, sqlite.query, sqlite.exec, sqlite.execBatch);
+        if (this.sqlite) {
+          const roleSearch = new SearchBuilder<Role, RoleSM>(this.sqlite.query, 'roles', roleModel.attributes);
+          this.roleService = new SqlRoleService(roleSearch.search, param, this.sqlite.query, this.sqlite.exec, this.sqlite.execBatch);
+        }
       } else {
         this.roleService = new RoleClient(httpRequest, c.role_url);
       }
@@ -81,8 +92,10 @@ class ApplicationContext {
     if (!this.userService) {
       const c = this.getConfig();
       if (resource.offline) {
-        const userSearch = new SearchBuilder<User, UserSM>(sqlite.query, 'users', userModel.attributes);
-        this.userService = new SqlUserService(userSearch.search, param, sqlite.query, sqlite.exec, sqlite.execBatch);
+        if (this.sqlite) {
+          const userSearch = new SearchBuilder<User, UserSM>(this.sqlite.query, 'users', userModel.attributes);
+          this.userService = new SqlUserService(userSearch.search, param, this.sqlite.query, this.sqlite.exec, this.sqlite.execBatch);
+        }
       } else {
         this.userService = new UserClient(httpRequest, c.user_url);
       }

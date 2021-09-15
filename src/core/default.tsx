@@ -130,8 +130,7 @@ export default class DefaultWrapper extends BaseComponent<ModelHistoryProps, Int
     this.setState((prev) => ({ isToggleSearch: !prev.isToggleSearch }));
   }
 
-  toggleMenu = (e) => {
-    e.preventDetault();
+  toggleMenu = () => {
     this.setState((prev) => ({ isToggleMenu: !prev.isToggleMenu }));
   }
 
